@@ -43,7 +43,7 @@ export function handler(req, res) {
     const asked = url.searchParams.get("next") || "/";
     // Same-site paths only: "/x" is fine, "//evil.example" and "https://..." are not.
     const next = /^\/(?![\/\\])/.test(asked) ? asked : "/";
-    res.writeHead(302, { Location: next, "Set-Cookie": "sid=demo-session; HttpOnly" });
+    res.writeHead(302, { Location: next, "Set-Cookie": "sid=demo-session; HttpOnly; Secure; SameSite=Lax; Path=/" });
     return res.end();
   }
 
