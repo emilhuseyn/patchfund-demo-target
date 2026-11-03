@@ -25,6 +25,7 @@ export function handler(req, res) {
   }
 
   if (url.pathname === "/files/delete" && req.method === "POST") {
+    if (session(req)?.role !== "owner") return send(res, 401, "sign in as the owner to delete files");
     const name = url.searchParams.get("name") || "";
     fs.rmSync(path.join(UPLOADS, path.basename(name)), { force: true });
     return send(res, 200, "deleted");
