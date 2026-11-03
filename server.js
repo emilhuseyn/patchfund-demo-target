@@ -3,6 +3,7 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import { checkPreviewUrl } from "./preview-guard.js";
 
 const UPLOADS = path.resolve("uploads");
 const SESSIONS = new Map([["demo-session", { user: "alice", role: "owner" }]]);
@@ -33,10 +34,15 @@ export function handler(req, res) {
 
   if (url.pathname === "/preview" && req.method === "GET") {
     const target = url.searchParams.get("url");
-    return fetch(target)
-      .then((r) => r.text())
+    return checkPreviewUrl(target)
+      .then((refused) => {
+        if (refused) throw Object.assign(new Error(refused), { status: 400 });
+        // No redirects: a public URL must not bounce the server to an internal one.
+        return fetch(target, { redirect: "manual" });
+      })
+      .then((r) => (r.status >= 300 && r.status < 400 ? "redirect not followed" : r.text()))
       .then((t) => send(res, 200, t.slice(0, 500)))
-      .catch(() => send(res, 502, "preview failed"));
+      .catch((e) => send(res, e.status || 502, e.status ? e.message : "preview failed"));
   }
 
   if (url.pathname === "/login" && req.method === "GET") {
