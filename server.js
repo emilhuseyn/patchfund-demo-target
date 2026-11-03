@@ -18,8 +18,9 @@ export function handler(req, res) {
 
   if (url.pathname === "/files" && req.method === "GET") {
     const name = url.searchParams.get("name") || "";
-    const file = path.join(UPLOADS, name);
-    if (!fs.existsSync(file)) return send(res, 404, "not found");
+    const file = path.resolve(UPLOADS, name);
+    // Only files inside uploads/: anything that resolves elsewhere is treated as missing.
+    if (!file.startsWith(UPLOADS + path.sep) || !fs.existsSync(file)) return send(res, 404, "not found");
     return send(res, 200, fs.readFileSync(file));
   }
 
