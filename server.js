@@ -1,0 +1,56 @@
+// tinyshare: a deliberately small file-sharing server used as the target of the Patch Fund demo.
+// Its open issues are real security bugs; each one carries a bounty in the Patch Fund demo DAO on NEAR testnet.
+import http from "node:http";
+import fs from "node:fs";
+import path from "node:path";
+
+const UPLOADS = path.resolve("uploads");
+const SESSIONS = new Map([["demo-session", { user: "alice", role: "owner" }]]);
+
+function session(req) {
+  const cookie = req.headers.cookie || "";
+  const id = cookie.match(/sid=([\w-]+)/)?.[1];
+  return id ? SESSIONS.get(id) : undefined;
+}
+
+export function handler(req, res) {
+  const url = new URL(req.url, "http://localhost");
+
+  if (url.pathname === "/files" && req.method === "GET") {
+    const name = url.searchParams.get("name") || "";
+    const file = path.join(UPLOADS, name);
+    if (!fs.existsSync(file)) return send(res, 404, "not found");
+    return send(res, 200, fs.readFileSync(file));
+  }
+
+  if (url.pathname === "/files/delete" && req.method === "POST") {
+    const name = url.searchParams.get("name") || "";
+    fs.rmSync(path.join(UPLOADS, path.basename(name)), { force: true });
+    return send(res, 200, "deleted");
+  }
+
+  if (url.pathname === "/preview" && req.method === "GET") {
+    const target = url.searchParams.get("url");
+    return fetch(target)
+      .then((r) => r.text())
+      .then((t) => send(res, 200, t.slice(0, 500)))
+      .catch(() => send(res, 502, "preview failed"));
+  }
+
+  if (url.pathname === "/login" && req.method === "GET") {
+    const next = url.searchParams.get("next") || "/";
+    res.writeHead(302, { Location: next, "Set-Cookie": "sid=demo-session; HttpOnly" });
+    return res.end();
+  }
+
+  send(res, 404, "not found");
+}
+
+function send(res, status, body) {
+  res.writeHead(status, { "Content-Type": "text/plain" });
+  res.end(body);
+}
+
+if (process.argv[1] && import.meta.url.endsWith(path.basename(process.argv[1]))) {
+  http.createServer(handler).listen(8080, () => console.log("tinyshare on http://localhost:8080"));
+}

@@ -1,0 +1,9 @@
+{
+  "name": "tinyshare",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A deliberately small file-sharing server, the target of the Patch Fund demo.",
+  "scripts": { "start": "node server.js", "test": "node --test" },
+  "license": "MIT"
+}
