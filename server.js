@@ -40,7 +40,9 @@ export function handler(req, res) {
   }
 
   if (url.pathname === "/login" && req.method === "GET") {
-    const next = url.searchParams.get("next") || "/";
+    const asked = url.searchParams.get("next") || "/";
+    // Same-site paths only: "/x" is fine, "//evil.example" and "https://..." are not.
+    const next = /^\/(?![\/\\])/.test(asked) ? asked : "/";
     res.writeHead(302, { Location: next, "Set-Cookie": "sid=demo-session; HttpOnly" });
     return res.end();
   }
